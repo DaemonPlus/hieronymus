@@ -9,41 +9,39 @@
 
 AUTOSELECT_FLAG=false
 
-while [[ $# > 0 ]]
-do
-key="$1"
-
-case $key in
-  -a|--auto)
-  AUTOSELECT_FLAG=true
-  shift
-  ;;
-  *)
-  ;;
-esac
-shift
+while getopts ":a" opt; do
+  case "$opt" in
+    a)
+      AUTOSELECT_FLAG=true
+      echo wat
+      ;;
+    \?)
+      echo "Unknown option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
 done
 
 if $AUTOSELECT_FLAG ; then
   WINID=$(xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)
-  if [ $WINID == "0x0" ]; then
+  if [ "$WINID" = "0x0" ]; then
     echo "You can't suspend the root window!"
     exit 1
   fi
-  CRIMINAL=$(xprop -id $WINID _NET_WM_PID | grep -o '[0-9]*')
+  CRIMINAL=$(xprop -id "$WINID" _NET_WM_PID | grep -o '[0-9]*')
 else
   CRIMINAL=$(xprop _NET_WM_PID | grep -o '[0-9]*')
 fi
 
-if [[ -z $CRIMINAL ]]; then
+if [ -z "$CRIMINAL" ]; then
   echo "This is a strange window."
   exit 2
 fi
 
-CURSTATE=$(cat /proc/$CRIMINAL/status | grep 'State' | cut -f 2)
+CURSTATE=$(grep 'State' /proc/"$CRIMINAL"/status | cut -f 2)
 
-if [[ "$CURSTATE" != "T (stopped)" ]]; then
-  kill -STOP $CRIMINAL
+if [ "$CURSTATE" != "T (stopped)" ]; then
+  kill -STOP "$CRIMINAL"
 else
-  kill -CONT $CRIMINAL
+  kill -CONT "$CRIMINAL"
 fi
